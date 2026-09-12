@@ -44,6 +44,16 @@ in
     enable = mkEnableOption "support for running NixOS as a WSL distribution";
     useWindowsDriver = mkEnableOption "OpenGL driver from the Windows host";
 
+    kernelModules = mkOption {
+      type = listOf str;
+      default = [ ];
+      example = [ "vhci-hcd" ];
+      description = ''
+        The set of kernel modules to be loaded in the second stage of
+        the boot process via systemd-modules-load.service.
+      '';
+    };
+
     wslLibExtraLinks = mkOption {
       type = listOf str;
       default = [ ];
@@ -137,6 +147,9 @@ in
         })
         (mkIf config.wsl.wslConf.network.generateResolvConf {
           "resolv.conf".enable = false;
+        })
+        (mkIf (cfg.kernelModules != [ ]) {
+          "modules-load.d/nixos.conf".text = concatStringsSep "\n" cfg.kernelModules + "\n";
         })
       ];
     };

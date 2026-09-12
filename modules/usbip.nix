@@ -44,6 +44,8 @@ in
 
     services.udev.enable = true;
 
+    wsl.kernelModules = [ "vhci-hcd" ];
+
     wsl.extraBin = [
       { src = "${pkgs.coreutils}/bin/cat"; }
       { src = "${pkgs.coreutils}/bin/ls"; }
