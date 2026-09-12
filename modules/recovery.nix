@@ -1,9 +1,6 @@
 { config, pkgs, ... }:
 let
   nixos-enter = pkgs.nixos-enter or config.system.build.nixos-enter;
-  nixos-enter' = nixos-enter.overrideAttrs (_: {
-    runtimeShell = "/bin/bash";
-  });
 
   recovery = pkgs.writeScriptBin "nixos-wsl-recovery" ''
     #! /bin/sh
@@ -14,7 +11,11 @@ let
       exit 1
     fi
     mount -o remount,rw /mnt/wslg/distro
-    exec /mnt/wslg/distro/${nixos-enter'}/bin/nixos-enter --root /mnt/wslg/distro "$@"
+    if ! grep -qs ' /nix ' /proc/mounts; then
+      mkdir -p /nix
+      mount --bind /mnt/wslg/distro/nix /nix
+    fi
+    exec /mnt/wslg/distro/${nixos-enter}/bin/nixos-enter --root /mnt/wslg/distro "$@"
   '';
 
 in
