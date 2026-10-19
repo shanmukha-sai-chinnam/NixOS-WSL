@@ -32,6 +32,12 @@ with builtins; with lib;
         };
       };
 
+      # In WSL 2, binfmt_misc is managed by the host and flushing rules can return
+      # EROFS (Read-only file system). Treat exit status 1 as non-fatal to prevent activation failure.
+      systemd.services.systemd-binfmt.serviceConfig = {
+        SuccessExitStatus = [ "0" "1" ];
+      };
+
       warnings =
         let
           registrations = config.boot.binfmt.registrations;

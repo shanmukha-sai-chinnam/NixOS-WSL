@@ -164,6 +164,7 @@ in
       after = [ "nixos-wsl-migration-x11mount.service" ];
       wants = after;
       wantedBy = [ "local-fs.target" ];
+      unitConfig.ConditionPathExists = "${cfg.wslConf.automount.root}/wslg/.X11-unix/X0";
     }];
     # Remove symbolic link for WSLg X11 socket, which was created by NixOS-WSL until 2024-02-24
     systemd.services.nixos-wsl-migration-x11mount = {
@@ -176,6 +177,16 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = "${pkgs.coreutils}/bin/rm /tmp/.X11-unix";
+      };
+    };
+
+    # Override WSL 2.4+ generated wsl-mnt-guard service to use Nix store binaries
+    systemd.services.wsl-mnt-guard = {
+      overrideStrategy = "asDropin";
+      unitConfig.ConditionPathIsMountPoint = "/mnt/wsl";
+      serviceConfig = {
+        ExecStart = [ "" "${pkgs.coreutils}/bin/true" ];
+        ExecStop = [ "" "-${pkgs.util-linux}/bin/mount --make-rslave /mnt/wsl" ];
       };
     };
 
@@ -200,7 +211,7 @@ in
 
     system.activationScripts = {
       copy-launchers = mkIf cfg.startMenuLaunchers (
-        stringAfter [ ] ''
+        stringAfter [ "etc" "users" ] ''
           for x in applications icons; do
             echo "setting up /usr/share/''${x}..."
             targets=()
@@ -224,7 +235,7 @@ in
           done
         ''
       );
-      populateBin = lib.mkIf cfg.populateBin (stringAfter [ ] ''
+      populateBin = lib.mkIf cfg.populateBin (stringAfter [ "binsh" ] ''
         echo "setting up /bin..."
         ${concatStringsSep "\n" (map
           (entry:
@@ -239,7 +250,6 @@ in
 
     # require people to use lib.mkForce to make it harder to brick their installation
     wsl = {
-      populateBin = mkIf config.services.envfs.enable false;
       extraBin = [
         { src = "/init"; name = "wslpath"; }
         { src = "${cfg.binShExe}"; name = "sh"; }
