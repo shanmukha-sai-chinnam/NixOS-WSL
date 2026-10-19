@@ -3,7 +3,6 @@
     ./build-tarball.nix
     ./docker-desktop.nix
     ./interop.nix
-    ./nvidia.nix
     ./recovery.nix
     ./ssh-agent.nix
     ./systemd
